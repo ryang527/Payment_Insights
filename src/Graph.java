@@ -8,14 +8,6 @@ import java.util.Map.Entry;
  * Graph is a unweighted, undirected graph of nodes and edges.
  * It supports breadth-first search on the graph, including specifying the depth of the search 
  */
-/**
- * @author rena
- *
- */
-/**
- * @author rena
- *
- */
 public class Graph {
 	private HashMap<Integer, HashSet<Integer>> nodes; // Key is the id representing the node, Value is the list of edges for the node
 	
@@ -105,6 +97,41 @@ public class Graph {
 		return str.toString();
 	}
 
+	/**
+	 * Traverse more one degree away in BFS.
+	 * curdepth gives the current depth the graph is away from the node corresponding to queue and visitedThisNode 
+	 * @param queueEnd
+	 * @param visitedThisNode
+	 * @param visitedOtherNode
+	 * @param curDepth
+	 * @return
+	 */
+	private boolean oneDepthBFS(ArrayDeque<int[]> queue, 
+								HashSet<Integer> visitedThisNode, HashSet<Integer> visitedOtherNode,
+								int BFSDepth) {
+	    //Keep going through all nodes in queue at BFSDepth, but not new friendId nodes at BFSDepth+1
+		while ((queue.peek()[1] <= BFSDepth) && !queue.isEmpty()) {
+	    	int[] curNode = queue.poll();
+	    	int curId = curNode[0];
+	    	int curDepth = curNode[1];
+	    	
+			for (Integer friendId : nodes.get(curId)) {
+				//Check if friendId node is in set of visitedOthers
+				//If true, the two BFS overlap and there is a path between the start and end nodes
+				if (visitedOtherNode.contains(friendId)) {
+			          return true;
+				}
+				
+				// Don't add friendId to queue if already visited that node
+				if (!visitedThisNode.contains(friendId)) {
+					visitedThisNode.add(friendId);
+					queue.add(new int[]{friendId, curDepth + 1});
+				}
+			}
+	      }
+	    return false;
+	}
+	
 	/**Performs breadth-first search on the graph starting at the node with the id startNodeId.
 	 * Returns true if a node with id endNodeId is discovered within degreeSeparation depth from
 	 * the starting node.
@@ -114,44 +141,43 @@ public class Graph {
 	 * @return
 	 */
 	public boolean BFS(int startNodeId, int endNodeId, int degreeSeparation) {
-		if (degreeSeparation < 0 || !nodes.containsKey(startNodeId)) {
+		if (degreeSeparation < 0 || !nodes.containsKey(startNodeId) || !nodes.containsKey(endNodeId)) {
 			return false;
 		}
 
-		if(!nodes.containsKey(endNodeId)){
-			return false;
+		if(startNodeId == endNodeId){
+			return true;
 		}
 
 		//In queue, hold tuple (nodeId, depth of node from startNodeId)
-		ArrayDeque<int[]> queue = new ArrayDeque<int[]>();
+		ArrayDeque<int[]> queueStart = new ArrayDeque<int[]>();
+		ArrayDeque<int[]> queueEnd = new ArrayDeque<int[]>();
 
-		HashSet<Integer> visited = new HashSet<Integer>();// The set of nodes already visited
+		HashSet<Integer> visitedStart = new HashSet<Integer>();// The set of nodes already visited
+		HashSet<Integer> visitedEnd = new HashSet<Integer>();// The set of nodes already visited
 
-		queue.add(new int[]{startNodeId, 0});
+		queueStart.add(new int[]{startNodeId, 0});
+	    queueEnd.add(new int[]{endNodeId, 0});
+      
+	    visitedStart.add(startNodeId);
+	    visitedEnd.add(endNodeId);
 	    
-		while(!queue.isEmpty()){
-			int[] current = queue.poll();
-			int curId = current[0];
-			int curDepth = current[1];
-			
-			// Found the end node
-			if (curId == endNodeId) {
+		int curDepth = 0;
+		while ((curDepth < degreeSeparation) && !queueStart.isEmpty() && !queueEnd.isEmpty()) {
+			//Do one level BFS from start node
+			int depthStartSide = curDepth / 2;
+			if (oneDepthBFS(queueStart, visitedStart, visitedEnd, depthStartSide)){
 				return true;
 			}
-
-			visited.add(curId);
 			curDepth++;
-			//Don't add nodes to queue if they are too many degrees of separation from the start node 
-			if (curDepth <= degreeSeparation) {
-				for (Integer friendId : nodes.get(curId)) {
-					// Don't add nodes to queue if already visited that node
-					if (!visited.contains(friendId)) {
-						queue.push(new int[]{friendId, curDepth});
-					}
-				}
+			
+			int depthEndSide = (curDepth - 1) / 2;
+			//Do one level BFS from end node
+			if ((curDepth < degreeSeparation) && oneDepthBFS(queueEnd, visitedEnd, visitedStart, depthEndSide)){
+				return true;
 			}
+			curDepth++;
 		}
-
 		return false;
 	}
 }
