@@ -98,9 +98,11 @@ public class Graph {
 	}
 
 	/**
-	 * Traverse more one degree away in BFS.
+	 * Traverse one more degree away in BFS, from the node corresponding to queue.
+	 * visitedThisNode is the list of nodes already reached from the node corresponding to queue.
+	 * visitedOtherNode is the list of nodes already reached from the searching starting at the other node.
 	 * curdepth gives the current depth the graph is away from the node corresponding to queue and visitedThisNode 
-	 * @param queueEnd
+	 * @param queue
 	 * @param visitedThisNode
 	 * @param visitedOtherNode
 	 * @param curDepth
